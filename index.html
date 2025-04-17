@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shake Game - Telegram Mini App</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to bottom right, #ffe082, #ffb300);
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
+    }
+    .container {
+      background: #fff3e0;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      width: 90%;
+      max-width: 400px;
+    }
+    img.avatar {
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+    }
+    .stats {
+      margin: 20px 0;
+    }
+    .button {
+      background-color: #f57c00;
+      color: white;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .shake-indicator {
+      font-size: 24px;
+      margin-top: 20px;
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>📳 Shake to Win!</h2>
+    <div id="userInfo"></div>
+    <div class="stats">
+      <p>Shakes: <span id="shakeCount">0</span></p>
+      <p>Coins: <span id="coinCount">0</span></p>
+      <button class="button" onclick="resetGame()">Reset Game</button>
+    </div>
+    <div class="shake-indicator">👋 Shake your phone!</div>
+  </div>
+
+  <script>
+    let shakeCount = parseInt(localStorage.getItem('shakes') || '0');
+    let coinCount = parseInt(localStorage.getItem('coins') || '0');
+    let lastShake = 0;
+
+    function updateStats() {
+      document.getElementById('shakeCount').textContent = shakeCount;
+      document.getElementById('coinCount').textContent = coinCount;
+    }
+
+    function resetGame() {
+      shakeCount = 0;
+      coinCount = 0;
+      localStorage.setItem('shakes', shakeCount);
+      localStorage.setItem('coins', coinCount);
+      updateStats();
+    }
+
+    function handleShake() {
+      const now = Date.now();
+      if (now - lastShake < 1000) return;
+      lastShake = now;
+      shakeCount++;
+      const gained = Math.floor(Math.random() * 10) + 1;
+      coinCount += gained;
+      localStorage.setItem('shakes', shakeCount);
+      localStorage.setItem('coins', coinCount);
+      updateStats();
+    }
+
+    if (window.DeviceMotionEvent) {
+      window.addEventListener('devicemotion', (event) => {
+        const acc = event.accelerationIncludingGravity;
+        const shakeStrength = Math.abs(acc.x) + Math.abs(acc.y) + Math.abs(acc.z);
+        if (shakeStrength > 30) {
+          handleShake();
+        }
+      });
+    }
+
+    // Check Telegram WebApp
+    if (window.Telegram && Telegram.WebApp) {
+      Telegram.WebApp.ready();
+      const user = Telegram.WebApp.initDataUnsafe.user;
+      if (!user) {
+        alert("🚫 You must open this game inside Telegram to play.");
+        document.body.innerHTML = '<h3 style="padding: 40px">❌ Telegram Web App required</h3>';
+      } else {
+        const avatar = user.photo_url || 'https://i.imgur.com/8Km9tLL.png';
+        document.getElementById('userInfo').innerHTML = `
+          <p><img class="avatar" src="${avatar}" /></p>
+          <p><strong>${user.first_name}</strong></p>
+        `;
+      }
+    } else {
+      alert("🚫 This game only works inside Telegram Mini App.");
+      document.body.innerHTML = '<h3 style="padding: 40px">❌ Telegram Mini App Only</h3>';
+    }
+
+    updateStats();
+  </script>
+</body>
+</html>
